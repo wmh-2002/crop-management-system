@@ -176,7 +176,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -407,9 +407,9 @@ export default {
       fetchReportList()
     }
     
-    const dialogTitle = () => {
+    const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '生成报告' : '编辑报告'
-    }
+    })
     
     onMounted(() => {
       fetchReportList()

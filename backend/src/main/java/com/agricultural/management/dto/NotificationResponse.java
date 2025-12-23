@@ -134,22 +134,4 @@ public class NotificationResponse {
         this.updatedAt = updatedAt;
     }
 
-    public NotificationResponse(Long id, String title, String content, Notification.NotificationType type,
-                               Notification.NotificationPriority priority, LocalDateTime scheduledTime,
-                               LocalDateTime sentTime, Notification.NotificationStatus status,
-                               List<Long> recipientIds, Long planId, LocalDateTime createdAt,
-                               LocalDateTime updatedAt) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.type = type;
-        this.priority = priority;
-        this.scheduledTime = scheduledTime;
-        this.sentTime = sentTime;
-        this.status = status;
-        this.recipientIds = recipientIds;
-        this.planId = planId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }

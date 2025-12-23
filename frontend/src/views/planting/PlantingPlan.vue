@@ -11,23 +11,32 @@
               <el-icon><Plus /></el-icon>
               新增
             </el-button>
-            <el-input 
-              v-model="searchKeyword" 
-              placeholder="搜索计划" 
-              style="width: 200px; margin-left: 10px;" 
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索计划名称"
+              style="width: 200px; margin-left: 10px;"
               clearable
+              @keyup.enter="handleSearch"
             />
-            <el-select 
-              v-model="statusFilter" 
-              placeholder="状态筛选" 
+            <el-select
+              v-model="statusFilter"
+              placeholder="状态筛选"
               style="margin-left: 10px; width: 120px;"
               clearable
+              @change="handleFilter"
             >
               <el-option label="计划中" value="PLANNED" />
               <el-option label="进行中" value="IN_PROGRESS" />
               <el-option label="已完成" value="COMPLETED" />
               <el-option label="已取消" value="CANCELLED" />
             </el-select>
+            <el-button type="primary" @click="handleSearch" style="margin-left: 10px;">
+              <el-icon><Search /></el-icon>
+              搜索
+            </el-button>
+            <el-button @click="handleReset" style="margin-left: 5px;">
+              重置
+            </el-button>
           </div>
           <div class="card-header-right">
             <el-button>
@@ -187,9 +196,9 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, Plus, Download, Search } from '@element-plus/icons-vue'
 import { 
   getPlantingPlanList, 
   createPlantingPlan, 
@@ -257,36 +266,91 @@ export default {
     const fetchPlanList = async () => {
       loading.value = true
       try {
-        const response = await getPlantingPlanList({
+        console.log('开始获取种植计划列表...')
+        const params = {
           page: pagination.currentPage,
           size: pagination.pageSize
-        })
-        planList.value = response.data
+        }
+
+        // 添加筛选参数
+        if (searchKeyword.value.trim()) {
+          params.planName = searchKeyword.value.trim()
+        }
+
+        if (statusFilter.value) {
+          params.status = statusFilter.value
+        }
+
+        console.log('请求参数:', params)
+        const response = await getPlantingPlanList(params)
+        console.log('种植计划列表响应:', response)
+
+        // 后端返回的数据格式：{ code, message, data: { content, page, size, totalElements, ... } }
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const pageData = response.data.data
+          planList.value = pageData.content || []
+          pagination.total = pageData.totalElements || 0
+          pagination.currentPage = pageData.page || 1
+          pagination.pageSize = pageData.size || 10
+          console.log('成功获取种植计划列表:', planList.value.length, '条记录')
+        } else {
+          planList.value = []
+          pagination.total = 0
+          console.log('种植计划列表响应格式不正确:', response.data)
+        }
       } catch (error) {
         console.error('获取种植计划列表失败:', error)
         ElMessage.error('获取种植计划列表失败')
+        planList.value = []
+        pagination.total = 0
       } finally {
         loading.value = false
       }
     }
-    
-    // 获取农田列表
+
+    // 获取农田列表（用于下拉选择）
     const fetchFarmlandList = async () => {
       try {
-        const response = await getFarmlandList()
-        farmlandList.value = response.data
+        console.log('开始获取农田列表...')
+        const response = await getFarmlandList({
+          page: 1,
+          size: 1000 // 获取所有农田用于选择
+        })
+        console.log('农田列表响应:', response)
+
+        if (response.data && response.data.code === 200 && response.data.data) {
+          farmlandList.value = response.data.data.content || []
+          console.log('成功获取农田列表:', farmlandList.value.length, '条记录')
+        } else {
+          farmlandList.value = []
+          console.log('农田列表响应格式不正确:', response.data)
+        }
       } catch (error) {
         console.error('获取农田列表失败:', error)
+        farmlandList.value = []
       }
     }
-    
-    // 获取作物列表
+
+    // 获取作物列表（用于下拉选择）
     const fetchCropList = async () => {
       try {
-        const response = await getCropList()
-        cropList.value = response.data
+        console.log('开始获取作物列表...')
+        const response = await getCropList({
+          page: 1,
+          size: 1000 // 获取所有作物用于选择
+        })
+        console.log('作物列表响应:', response)
+
+        if (response.data && response.data.code === 200 && response.data.data) {
+          cropList.value = response.data.data.content || []
+          console.log('成功获取作物列表:', cropList.value.length, '条记录')
+        } else {
+          cropList.value = []
+          console.log('作物列表响应格式不正确:', response.data)
+        }
       } catch (error) {
         console.error('获取作物列表失败:', error)
+        cropList.value = []
       }
     }
     
@@ -333,10 +397,8 @@ export default {
     // 编辑种植计划
     const handleEdit = (plan) => {
       dialogType.value = 'edit'
-      Object.assign(planForm, { 
-        ...plan,
-        farmlandId: plan.farmland.id,
-        cropId: plan.crop.id
+      Object.assign(planForm, {
+        ...plan
       })
       dialogVisible.value = true
     }
@@ -362,22 +424,41 @@ export default {
     // 提交表单
     const submitForm = async () => {
       if (!planFormRef.value) return
-      
+
       await planFormRef.value.validate(async (valid) => {
         if (valid) {
           try {
-            // 创建或更新数据对象
-            const formData = {
-              ...planForm,
-              farmland: { id: planForm.farmlandId },
-              crop: { id: planForm.cropId }
-            }
-            
             if (dialogType.value === 'add') {
-              await createPlantingPlan(formData)
+              // 创建种植计划 - 传递所有字段
+              const createData = {
+                farmlandId: planForm.farmlandId,
+                cropId: planForm.cropId,
+                planName: planForm.planName,
+                plannedStartDate: planForm.plannedStartDate,
+                plannedEndDate: planForm.plannedEndDate,
+                expectedHarvestDate: planForm.expectedHarvestDate || undefined,
+                sowingDensity: planForm.sowingDensity || undefined,
+                notes: planForm.notes || undefined,
+                status: planForm.status
+              }
+              console.log('创建种植计划数据:', createData)
+              await createPlantingPlan(createData)
               ElMessage.success('种植计划添加成功')
             } else {
-              await updatePlantingPlan(planForm.id, formData)
+              // 更新种植计划 - 只传递有值的字段
+              const updateData = {}
+              if (planForm.farmlandId) updateData.farmlandId = planForm.farmlandId
+              if (planForm.cropId) updateData.cropId = planForm.cropId
+              if (planForm.planName) updateData.planName = planForm.planName
+              if (planForm.plannedStartDate) updateData.plannedStartDate = planForm.plannedStartDate
+              if (planForm.plannedEndDate) updateData.plannedEndDate = planForm.plannedEndDate
+              if (planForm.expectedHarvestDate !== undefined) updateData.expectedHarvestDate = planForm.expectedHarvestDate || null
+              if (planForm.sowingDensity !== undefined) updateData.sowingDensity = planForm.sowingDensity || null
+              if (planForm.notes !== undefined) updateData.notes = planForm.notes || null
+              if (planForm.status) updateData.status = planForm.status
+
+              console.log('更新种植计划数据:', updateData)
+              await updatePlantingPlan(planForm.id, updateData)
               ElMessage.success('种植计划更新成功')
             }
             dialogVisible.value = false
@@ -390,20 +471,40 @@ export default {
       })
     }
     
+    // 搜索处理
+    const handleSearch = () => {
+      pagination.currentPage = 1 // 搜索时重置到第一页
+      fetchPlanList()
+    }
+
+    // 筛选处理
+    const handleFilter = () => {
+      pagination.currentPage = 1 // 筛选时重置到第一页
+      fetchPlanList()
+    }
+
+    // 重置筛选
+    const handleReset = () => {
+      searchKeyword.value = ''
+      statusFilter.value = ''
+      pagination.currentPage = 1
+      fetchPlanList()
+    }
+
     // 分页处理
     const handleSizeChange = (size) => {
       pagination.pageSize = size
       fetchPlanList()
     }
-    
+
     const handleCurrentChange = (page) => {
       pagination.currentPage = page
       fetchPlanList()
     }
     
-    const dialogTitle = () => {
+    const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加种植计划' : '编辑种植计划'
-    }
+    })
     
     onMounted(() => {
       fetchPlanList()
@@ -428,6 +529,9 @@ export default {
       handleEdit,
       handleDelete,
       submitForm,
+      handleSearch,
+      handleFilter,
+      handleReset,
       handleSizeChange,
       handleCurrentChange,
       dialogTitle,
@@ -436,7 +540,8 @@ export default {
       ArrowRight,
       ArrowDown,
       Plus,
-      Download
+      Download,
+      Search
     }
   }
 }

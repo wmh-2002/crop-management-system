@@ -11,22 +11,41 @@
               <el-icon><Plus /></el-icon>
               新增
             </el-button>
-            <el-input 
-              v-model="searchKeyword" 
-              placeholder="搜索用户" 
-              style="width: 200px; margin-left: 10px;" 
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索用户名/姓名/邮箱"
+              style="width: 200px; margin-left: 10px;"
               clearable
+              @keyup.enter="handleSearch"
             />
-            <el-select 
-              v-model="roleFilter" 
-              placeholder="角色筛选" 
+            <el-select
+              v-model="roleFilter"
+              placeholder="角色筛选"
               style="margin-left: 10px; width: 120px;"
               clearable
+              @change="handleFilter"
             >
               <el-option label="管理员" value="ADMIN" />
               <el-option label="农场主" value="FARMER" />
               <el-option label="工作人员" value="STAFF" />
             </el-select>
+            <el-select
+              v-model="statusFilter"
+              placeholder="状态筛选"
+              style="margin-left: 10px; width: 120px;"
+              clearable
+              @change="handleFilter"
+            >
+              <el-option label="启用" :value="true" />
+              <el-option label="禁用" :value="false" />
+            </el-select>
+            <el-button type="primary" @click="handleSearch" style="margin-left: 10px;">
+              <el-icon><Search /></el-icon>
+              搜索
+            </el-button>
+            <el-button @click="handleReset" style="margin-left: 5px;">
+              重置
+            </el-button>
           </div>
           <div class="card-header-right">
             <el-button>
@@ -68,14 +87,15 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+            <el-tag :type="row.status ? 'success' : 'danger'">
+              {{ row.status ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="250">
           <template #default="{ row }">
+            <el-button size="small" type="info" @click="handleViewDetail(row)">详情</el-button>
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
           </template>
@@ -128,12 +148,12 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="userForm.status" placeholder="请选择状态" style="width: 100%">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option label="启用" :value="true" />
+            <el-option label="禁用" :value="false" />
           </el-select>
         </el-form-item>
-        <el-form-item label="密码" prop="password" v-if="dialogType === 'add'">
-          <el-input v-model="userForm.password" type="password" show-password />
+        <el-form-item :label="dialogType === 'add' ? '密码' : '新密码（可选）'" prop="password">
+          <el-input v-model="userForm.password" type="password" show-password :placeholder="dialogType === 'add' ? '请输入密码' : '留空表示不修改密码'" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -147,15 +167,16 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
-import { login } from '@/api/auth'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowRight, ArrowDown, Plus, Download, Search } from '@element-plus/icons-vue'
+import { getUserList, createUser, updateUser, deleteUser } from '@/api/user'
 
 export default {
   name: 'UserManagement',
   setup() {
+    const router = useRouter()
     const userList = ref([])
     const loading = ref(false)
     const dialogVisible = ref(false)
@@ -163,7 +184,22 @@ export default {
     const userFormRef = ref(null)
     const searchKeyword = ref('')
     const roleFilter = ref('')
-    
+    const statusFilter = ref('')
+
+    // 动态密码验证规则
+    const passwordRules = computed(() => [
+      {
+        required: dialogType.value === 'add',
+        message: dialogType.value === 'add' ? '请输入密码' : '如需修改密码，请输入新密码',
+        trigger: 'blur'
+      },
+      {
+        min: 6,
+        message: '密码长度不能少于6位',
+        trigger: 'blur'
+      }
+    ])
+
     const userForm = reactive({
       id: null,
       username: '',
@@ -171,11 +207,11 @@ export default {
       email: '',
       phone: '',
       role: '',
-      status: 1,
+      status: true,
       password: ''
     })
-    
-    const userRules = {
+
+    const userRules = reactive({
       username: [
         { required: true, message: '请输入用户名', trigger: 'blur' },
         { min: 3, max: 20, message: '用户名长度在3-20个字符之间', trigger: 'blur' }
@@ -190,30 +226,69 @@ export default {
       role: [
         { required: true, message: '请选择角色', trigger: 'change' }
       ],
-      password: [
-        { required: true, message: '请输入密码', trigger: 'blur' },
-        { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
-      ]
-    }
+      password: passwordRules
+    })
     
     const pagination = reactive({
       currentPage: 1,
       pageSize: 10,
       total: 0
     })
-    
+
     // 获取用户列表
     const fetchUserList = async () => {
+      // 检查是否有token
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.log('没有找到token，跳过获取用户列表')
+        ElMessage.warning('请先登录')
+        return
+      }
+
       loading.value = true
       try {
-        const response = await getUserList({
+        console.log('开始获取用户列表...')
+        const params = {
           page: pagination.currentPage,
           size: pagination.pageSize
-        })
-        userList.value = response.data
+        }
+
+        // 添加筛选参数
+        if (searchKeyword.value.trim()) {
+          // 搜索关键字传递给username参数，后端会处理多字段搜索
+          params.username = searchKeyword.value.trim()
+        }
+
+        if (roleFilter.value) {
+          params.role = roleFilter.value
+        }
+
+        if (statusFilter.value !== '') {
+          params.status = statusFilter.value
+        }
+
+        console.log('请求参数:', params)
+        const response = await getUserList(params)
+        console.log('用户列表响应:', response)
+
+        // 后端返回的数据格式：{ code, message, data: { content, page, size, totalElements, ... } }
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const pageData = response.data.data
+          userList.value = pageData.content || []
+          pagination.total = pageData.totalElements || 0
+          pagination.currentPage = pageData.page || 1
+          pagination.pageSize = pageData.size || 10
+          console.log('成功获取用户列表:', userList.value.length, '条记录')
+        } else {
+          userList.value = []
+          pagination.total = 0
+          console.log('用户列表响应格式不正确:', response.data)
+        }
       } catch (error) {
         console.error('获取用户列表失败:', error)
         ElMessage.error('获取用户列表失败')
+        userList.value = []
+        pagination.total = 0
       } finally {
         loading.value = false
       }
@@ -239,6 +314,11 @@ export default {
       }
     }
     
+    // 查看用户详情
+    const handleViewDetail = (user) => {
+      router.push(`/users/${user.id}`)
+    }
+
     // 添加用户
     const handleAddUser = () => {
       dialogType.value = 'add'
@@ -249,7 +329,7 @@ export default {
         email: '',
         phone: '',
         role: '',
-        status: 1,
+        status: true,
         password: ''
       })
       dialogVisible.value = true
@@ -258,7 +338,10 @@ export default {
     // 编辑用户
     const handleEdit = (user) => {
       dialogType.value = 'edit'
-      Object.assign(userForm, { ...user })
+      Object.assign(userForm, {
+        ...user,
+        password: '' // 编辑时清空密码字段
+      })
       dialogVisible.value = true
     }
     
@@ -283,41 +366,84 @@ export default {
     // 提交表单
     const submitForm = async () => {
       if (!userFormRef.value) return
-      
+
       await userFormRef.value.validate(async (valid) => {
         if (valid) {
           try {
             if (dialogType.value === 'add') {
-              await createUser(userForm)
+              // 创建用户 - 传递所有必需字段
+              const createData = {
+                username: userForm.username,
+                password: userForm.password,
+                realName: userForm.realName,
+                email: userForm.email || undefined,
+                phone: userForm.phone || undefined,
+                role: userForm.role,
+                status: userForm.status
+              }
+              console.log('创建用户数据:', createData)
+              await createUser(createData)
               ElMessage.success('用户添加成功')
             } else {
-              await updateUser(userForm.id, userForm)
+              // 更新用户 - 只传递有值的字段
+              const updateData = {}
+              if (userForm.password) updateData.password = userForm.password
+              if (userForm.realName) updateData.realName = userForm.realName
+              if (userForm.email !== undefined) updateData.email = userForm.email || null
+              if (userForm.phone !== undefined) updateData.phone = userForm.phone || null
+              if (userForm.role) updateData.role = userForm.role
+              if (userForm.status !== undefined) updateData.status = userForm.status
+
+              console.log('更新用户数据:', updateData)
+              await updateUser(userForm.id, updateData)
               ElMessage.success('用户更新成功')
             }
             dialogVisible.value = false
             fetchUserList() // 重新获取列表
           } catch (error) {
               console.error('保存失败:', error)
-              ElMessage.error('保存失败: ' + (error.message || '网络错误'))
+              const errorMessage = error.response?.data?.message || error.message || '网络错误'
+              ElMessage.error('保存失败: ' + errorMessage)
             }
         }
       })
     }
     
+    // 搜索处理
+    const handleSearch = () => {
+      pagination.currentPage = 1 // 搜索时重置到第一页
+      fetchUserList()
+    }
+
+    // 筛选处理
+    const handleFilter = () => {
+      pagination.currentPage = 1 // 筛选时重置到第一页
+      fetchUserList()
+    }
+
+    // 重置筛选
+    const handleReset = () => {
+      searchKeyword.value = ''
+      roleFilter.value = ''
+      statusFilter.value = ''
+      pagination.currentPage = 1
+      fetchUserList()
+    }
+
     // 分页处理
     const handleSizeChange = (size) => {
       pagination.pageSize = size
       fetchUserList()
     }
-    
+
     const handleCurrentChange = (page) => {
       pagination.currentPage = page
       fetchUserList()
     }
     
-    const dialogTitle = () => {
+    const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加用户' : '编辑用户'
-    }
+    })
     
     onMounted(() => {
       fetchUserList()
@@ -334,6 +460,7 @@ export default {
       pagination,
       getRoleTagType,
       getRoleText,
+      handleViewDetail,
       handleAddUser,
       handleEdit,
       handleDelete,
@@ -343,10 +470,15 @@ export default {
       dialogTitle,
       searchKeyword,
       roleFilter,
+      statusFilter,
+      handleSearch,
+      handleFilter,
+      handleReset,
       ArrowRight,
       ArrowDown,
       Plus,
-      Download
+      Download,
+      Search
     }
   }
 }
@@ -373,6 +505,8 @@ export default {
 .card-header-left {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .card-header-right {

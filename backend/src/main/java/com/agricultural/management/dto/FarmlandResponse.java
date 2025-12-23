@@ -97,15 +97,4 @@ public class FarmlandResponse {
         this.updatedAt = updatedAt;
     }
 
-    public FarmlandResponse(Long id, String name, BigDecimal area, String location, Farmland.FarmlandStatus status, String description, Long createdBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.name = name;
-        this.area = area;
-        this.location = location;
-        this.status = status;
-        this.description = description;
-        this.createdBy = createdBy;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }

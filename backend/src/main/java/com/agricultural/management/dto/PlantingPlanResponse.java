@@ -133,23 +133,4 @@ public class PlantingPlanResponse {
         this.updatedAt = updatedAt;
     }
 
-    public PlantingPlanResponse(Long id, Long farmlandId, Long cropId, String planName,
-                               LocalDate plannedStartDate, LocalDate plannedEndDate,
-                               LocalDate expectedHarvestDate, String sowingDensity,
-                               String notes, PlantingPlan.PlantingStatus status,
-                               Long createdBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.farmlandId = farmlandId;
-        this.cropId = cropId;
-        this.planName = planName;
-        this.plannedStartDate = plannedStartDate;
-        this.plannedEndDate = plannedEndDate;
-        this.expectedHarvestDate = expectedHarvestDate;
-        this.sowingDensity = sowingDensity;
-        this.notes = notes;
-        this.status = status;
-        this.createdBy = createdBy;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }

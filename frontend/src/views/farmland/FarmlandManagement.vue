@@ -11,22 +11,31 @@
               <el-icon><Plus /></el-icon>
               新增
             </el-button>
-            <el-input 
-              v-model="searchKeyword" 
-              placeholder="搜索农田" 
-              style="width: 200px; margin-left: 10px;" 
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索农田名称"
+              style="width: 200px; margin-left: 10px;"
               clearable
+              @keyup.enter="handleSearch"
             />
-            <el-select 
-              v-model="statusFilter" 
-              placeholder="状态筛选" 
+            <el-select
+              v-model="statusFilter"
+              placeholder="状态筛选"
               style="margin-left: 10px; width: 120px;"
               clearable
+              @change="handleFilter"
             >
               <el-option label="可用" value="AVAILABLE" />
               <el-option label="已种植" value="PLANTED" />
               <el-option label="维护中" value="MAINTENANCE" />
             </el-select>
+            <el-button type="primary" @click="handleSearch" style="margin-left: 10px;">
+              <el-icon><Search /></el-icon>
+              搜索
+            </el-button>
+            <el-button @click="handleReset" style="margin-left: 5px;">
+              重置
+            </el-button>
           </div>
           <div class="card-header-right">
             <el-button>
@@ -110,8 +119,8 @@
         <el-form-item label="农田面积(㎡)" prop="area">
           <el-input v-model.number="farmlandForm.area" type="number" placeholder="请输入农田面积" />
         </el-form-item>
-        <el-form-item label="位置" prop="location">
-          <el-input v-model="farmlandForm.location" placeholder="请输入农田位置" />
+        <el-form-item label="位置">
+          <el-input v-model="farmlandForm.location" placeholder="请输入农田位置（可选）" />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="farmlandForm.status" placeholder="请选择农田状态" style="width: 100%">
@@ -140,9 +149,9 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, Plus, Download, Search } from '@element-plus/icons-vue'
 import { getFarmlandList, createFarmland, updateFarmland, deleteFarmland } from '@/api/farmland'
 
 export default {
@@ -172,10 +181,7 @@ export default {
       ],
       area: [
         { required: true, message: '请输入农田面积', trigger: 'blur' },
-        { type: 'number', message: '农田面积必须为数字', trigger: 'blur' }
-      ],
-      location: [
-        { required: true, message: '请输入农田位置', trigger: 'blur' }
+        { type: 'number', min: 0.01, message: '农田面积必须大于0', trigger: 'blur' }
       ]
     }
     
@@ -189,14 +195,43 @@ export default {
     const fetchFarmlandList = async () => {
       loading.value = true
       try {
-        const response = await getFarmlandList({
+        console.log('开始获取农田列表...')
+        const params = {
           page: pagination.currentPage,
           size: pagination.pageSize
-        })
-        farmlandList.value = response.data
+        }
+
+        // 添加筛选参数
+        if (searchKeyword.value.trim()) {
+          params.name = searchKeyword.value.trim()
+        }
+
+        if (statusFilter.value) {
+          params.status = statusFilter.value
+        }
+
+        console.log('请求参数:', params)
+        const response = await getFarmlandList(params)
+        console.log('农田列表响应:', response)
+
+        // 后端返回的数据格式：{ code, message, data: { content, page, size, totalElements, ... } }
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const pageData = response.data.data
+          farmlandList.value = pageData.content || []
+          pagination.total = pageData.totalElements || 0
+          pagination.currentPage = pageData.page || 1
+          pagination.pageSize = pageData.size || 10
+          console.log('成功获取农田列表:', farmlandList.value.length, '条记录')
+        } else {
+          farmlandList.value = []
+          pagination.total = 0
+          console.log('农田列表响应格式不正确:', response.data)
+        }
       } catch (error) {
         console.error('获取农田列表失败:', error)
         ElMessage.error('获取农田列表失败')
+        farmlandList.value = []
+        pagination.total = 0
       } finally {
         loading.value = false
       }
@@ -264,41 +299,80 @@ export default {
     // 提交表单
     const submitForm = async () => {
       if (!farmlandFormRef.value) return
-      
+
       await farmlandFormRef.value.validate(async (valid) => {
         if (valid) {
           try {
             if (dialogType.value === 'add') {
-              await createFarmland(farmlandForm)
+              // 创建农田 - 传递所有字段
+              const createData = {
+                name: farmlandForm.name,
+                area: farmlandForm.area,
+                location: farmlandForm.location || undefined,
+                status: farmlandForm.status,
+                description: farmlandForm.description || undefined
+              }
+              console.log('创建农田数据:', createData)
+              await createFarmland(createData)
               ElMessage.success('农田添加成功')
             } else {
-              await updateFarmland(farmlandForm.id, farmlandForm)
+              // 更新农田 - 只传递有值的字段
+              const updateData = {}
+              if (farmlandForm.name) updateData.name = farmlandForm.name
+              if (farmlandForm.area) updateData.area = farmlandForm.area
+              if (farmlandForm.location !== undefined) updateData.location = farmlandForm.location || null
+              if (farmlandForm.status) updateData.status = farmlandForm.status
+              if (farmlandForm.description !== undefined) updateData.description = farmlandForm.description || null
+
+              console.log('更新农田数据:', updateData)
+              await updateFarmland(farmlandForm.id, updateData)
               ElMessage.success('农田更新成功')
             }
             dialogVisible.value = false
             fetchFarmlandList() // 重新获取列表
           } catch (error) {
               console.error('保存失败:', error)
-              ElMessage.error('保存失败: ' + (error.message || '网络错误'))
+              const errorMessage = error.response?.data?.message || error.message || '网络错误'
+              ElMessage.error('保存失败: ' + errorMessage)
             }
         }
       })
     }
     
+    // 搜索处理
+    const handleSearch = () => {
+      pagination.currentPage = 1 // 搜索时重置到第一页
+      fetchFarmlandList()
+    }
+
+    // 筛选处理
+    const handleFilter = () => {
+      pagination.currentPage = 1 // 筛选时重置到第一页
+      fetchFarmlandList()
+    }
+
+    // 重置筛选
+    const handleReset = () => {
+      searchKeyword.value = ''
+      statusFilter.value = ''
+      pagination.currentPage = 1
+      fetchFarmlandList()
+    }
+
     // 分页处理
     const handleSizeChange = (size) => {
       pagination.pageSize = size
       fetchFarmlandList()
     }
-    
+
     const handleCurrentChange = (page) => {
       pagination.currentPage = page
       fetchFarmlandList()
     }
     
-    const dialogTitle = () => {
+    const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加农田' : '编辑农田'
-    }
+    })
     
     onMounted(() => {
       fetchFarmlandList()
@@ -319,6 +393,9 @@ export default {
       handleEdit,
       handleDelete,
       submitForm,
+      handleSearch,
+      handleFilter,
+      handleReset,
       handleSizeChange,
       handleCurrentChange,
       dialogTitle,
@@ -327,7 +404,8 @@ export default {
       ArrowRight,
       ArrowDown,
       Plus,
-      Download
+      Download,
+      Search
     }
   }
 }

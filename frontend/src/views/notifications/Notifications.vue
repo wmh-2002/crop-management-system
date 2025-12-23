@@ -196,7 +196,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
 import { 
@@ -449,9 +449,9 @@ export default {
       fetchNotificationList()
     }
     
-    const dialogTitle = () => {
+    const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加提醒' : '编辑提醒'
-    }
+    })
     
     onMounted(() => {
       fetchNotificationList()

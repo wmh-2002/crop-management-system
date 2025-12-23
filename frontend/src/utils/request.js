@@ -13,8 +13,12 @@ service.interceptors.request.use(
   config => {
     // 在发送请求之前做些什么
     const token = localStorage.getItem('token')
+    console.log('发送请求:', config.url, 'Token:', token ? '存在' : '不存在')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+      console.log('添加Authorization头:', `Bearer ${token}`)
+    } else {
+      console.log('没有找到token，请求将不携带认证信息')
     }
     config.headers['Content-Type'] = 'application/json'
     return config

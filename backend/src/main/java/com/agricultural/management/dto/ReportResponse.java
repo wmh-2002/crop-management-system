@@ -106,18 +106,4 @@ public class ReportResponse {
         this.updatedAt = updatedAt;
     }
 
-    public ReportResponse(Long id, String title, Report.ReportType reportType, LocalDate startDate,
-                         LocalDate endDate, String content, String chartData, Long generatedBy,
-                         LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.title = title;
-        this.reportType = reportType;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.content = content;
-        this.chartData = chartData;
-        this.generatedBy = generatedBy;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }

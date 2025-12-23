@@ -123,20 +123,4 @@ public class CropResponse {
         this.updatedAt = updatedAt;
     }
 
-    public CropResponse(Long id, String name, String variety, String plantingSeason, Integer growthPeriod,
-                       BigDecimal expectedYield, String waterNeeds, String fertilizerNeeds,
-                       String diseaseInfo, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.name = name;
-        this.variety = variety;
-        this.plantingSeason = plantingSeason;
-        this.growthPeriod = growthPeriod;
-        this.expectedYield = expectedYield;
-        this.waterNeeds = waterNeeds;
-        this.fertilizerNeeds = fertilizerNeeds;
-        this.diseaseInfo = diseaseInfo;
-        this.description = description;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }

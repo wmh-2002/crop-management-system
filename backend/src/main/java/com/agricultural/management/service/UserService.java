@@ -37,21 +37,20 @@ public class UserService {
         Specification<User> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // 处理搜索关键词（OR条件：用户名、姓名或邮箱匹配）
+            // 前端传递的username参数作为通用搜索关键词
             if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.like(root.get("username"),
-                    "%" + request.getUsername().trim() + "%"));
+                String searchKeyword = request.getUsername().trim();
+                List<Predicate> searchPredicates = new ArrayList<>();
+                searchPredicates.add(criteriaBuilder.like(root.get("username"), "%" + searchKeyword + "%"));
+                searchPredicates.add(criteriaBuilder.like(root.get("realName"), "%" + searchKeyword + "%"));
+                searchPredicates.add(criteriaBuilder.like(root.get("email"), "%" + searchKeyword + "%"));
+
+                // 使用OR条件连接搜索谓词
+                predicates.add(criteriaBuilder.or(searchPredicates.toArray(new Predicate[0])));
             }
 
-            if (request.getRealName() != null && !request.getRealName().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.like(root.get("realName"),
-                    "%" + request.getRealName().trim() + "%"));
-            }
-
-            if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.like(root.get("email"),
-                    "%" + request.getEmail().trim() + "%"));
-            }
-
+            // 处理精确筛选条件（AND条件）
             if (request.getRole() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("role"), request.getRole()));
             }

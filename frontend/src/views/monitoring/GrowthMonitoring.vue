@@ -188,7 +188,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
 import { 
@@ -387,9 +387,9 @@ export default {
       fetchMonitoringList()
     }
     
-    const dialogTitle = () => {
+    const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加生长监控' : '编辑生长监控'
-    }
+    })
     
     onMounted(() => {
       fetchMonitoringList()

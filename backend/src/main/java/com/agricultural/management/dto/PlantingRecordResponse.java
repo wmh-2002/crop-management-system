@@ -107,19 +107,4 @@ public class PlantingRecordResponse {
         this.updatedAt = updatedAt;
     }
 
-    public PlantingRecordResponse(Long id, Long planId, PlantingRecord.OperationType operationType,
-                                 LocalDate operationDate, BigDecimal quantityUsed, Long operatorId,
-                                 String weatherConditions, String notes, LocalDateTime createdAt,
-                                 LocalDateTime updatedAt) {
-        this.id = id;
-        this.planId = planId;
-        this.operationType = operationType;
-        this.operationDate = operationDate;
-        this.quantityUsed = quantityUsed;
-        this.operatorId = operatorId;
-        this.weatherConditions = weatherConditions;
-        this.notes = notes;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }

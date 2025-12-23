@@ -53,8 +53,8 @@ export default {
     const loginFormRef = ref(null)
 
     const loginForm = reactive({
-      username: '',
-      password: ''
+      username: 'admin',
+      password: 'admin123'
     })
 
     const loginRules = {
@@ -78,7 +78,8 @@ export default {
               // 检查响应格式并处理
               if (response.data && response.data.code === 200) {
                 // 存储token
-                localStorage.setItem('token', response.data.data.token)
+                console.log(response.data.data.data.token)
+                localStorage.setItem('token', response.data.data.data.token)
                 localStorage.setItem('userInfo', JSON.stringify(response.data.data))
                 
                 ElMessage.success('登录成功')

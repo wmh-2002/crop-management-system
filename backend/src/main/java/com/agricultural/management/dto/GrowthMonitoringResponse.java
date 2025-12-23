@@ -161,26 +161,4 @@ public class GrowthMonitoringResponse {
         this.updatedAt = updatedAt;
     }
 
-    public GrowthMonitoringResponse(Long id, Long planId, LocalDate monitoringDate, BigDecimal heightMeasurement,
-                                   BigDecimal widthMeasurement, GrowthMonitoring.HealthStatus healthStatus,
-                                   BigDecimal soilMoisture, BigDecimal temperature, BigDecimal humidity,
-                                   Integer lightIntensity, BigDecimal phLevel, String notes, String photoUrl,
-                                   Long createdBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.planId = planId;
-        this.monitoringDate = monitoringDate;
-        this.heightMeasurement = heightMeasurement;
-        this.widthMeasurement = widthMeasurement;
-        this.healthStatus = healthStatus;
-        this.soilMoisture = soilMoisture;
-        this.temperature = temperature;
-        this.humidity = humidity;
-        this.lightIntensity = lightIntensity;
-        this.phLevel = phLevel;
-        this.notes = notes;
-        this.photoUrl = photoUrl;
-        this.createdBy = createdBy;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 }
