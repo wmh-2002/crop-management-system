@@ -57,10 +57,10 @@
           </div>
         </div>
       </template>
-      
-      <el-table 
-        :data="planList" 
-        style="width: 100%" 
+
+      <el-table
+        :data="planList"
+        style="width: 100%"
         v-loading="loading"
         row-key="id"
       >
@@ -79,14 +79,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
+            <el-button size="small" @click="handleViewDetail(row)">详情</el-button>
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <el-pagination
         class="pagination"
         @size-change="handleSizeChange"
@@ -98,17 +99,17 @@
         :total="pagination.total"
       />
     </el-card>
-    
+
     <!-- 种植计划编辑对话框 -->
-    <el-dialog 
-      v-model="dialogVisible" 
-      :title="dialogTitle" 
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogTitle"
       width="700px"
       :close-on-click-modal="false"
     >
-      <el-form 
-        :model="planForm" 
-        :rules="planRules" 
+      <el-form
+        :model="planForm"
+        :rules="planRules"
         ref="planFormRef"
         label-width="120px"
       >
@@ -117,20 +118,20 @@
         </el-form-item>
         <el-form-item label="农田选择" prop="farmlandId">
           <el-select v-model="planForm.farmlandId" placeholder="请选择农田" style="width: 100%">
-            <el-option 
-              v-for="farmland in farmlandList" 
-              :key="farmland.id" 
-              :label="farmland.name" 
+            <el-option
+              v-for="farmland in farmlandList"
+              :key="farmland.id"
+              :label="farmland.name"
               :value="farmland.id"
             />
           </el-select>
         </el-form-item>
         <el-form-item label="作物选择" prop="cropId">
           <el-select v-model="planForm.cropId" placeholder="请选择作物" style="width: 100%">
-            <el-option 
-              v-for="crop in cropList" 
-              :key="crop.id" 
-              :label="crop.name" 
+            <el-option
+              v-for="crop in cropList"
+              :key="crop.id"
+              :label="crop.name"
               :value="crop.id"
             />
           </el-select>
@@ -177,9 +178,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="备注" prop="notes">
-          <el-input 
-            v-model="planForm.notes" 
-            type="textarea" 
+          <el-input
+            v-model="planForm.notes"
+            type="textarea"
             :rows="3"
             placeholder="请输入备注信息"
           />
@@ -198,12 +199,13 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { ArrowRight, ArrowDown, Plus, Download, Search } from '@element-plus/icons-vue'
-import { 
-  getPlantingPlanList, 
-  createPlantingPlan, 
-  updatePlantingPlan, 
-  deletePlantingPlan 
+import {
+  getPlantingPlanList,
+  createPlantingPlan,
+  updatePlantingPlan,
+  deletePlantingPlan
 } from '@/api/plantingPlan'
 import { getFarmlandList } from '@/api/farmland'
 import { getCropList } from '@/api/crop'
@@ -211,6 +213,7 @@ import { getCropList } from '@/api/crop'
 export default {
   name: 'PlantingPlan',
   setup() {
+    const router = useRouter()
     const planList = ref([])
     const farmlandList = ref([])
     const cropList = ref([])
@@ -220,7 +223,7 @@ export default {
     const planFormRef = ref(null)
     const searchKeyword = ref('')
     const statusFilter = ref('')
-    
+
     const planForm = reactive({
       id: null,
       planName: '',
@@ -233,7 +236,7 @@ export default {
       status: 'PLANNED',
       notes: ''
     })
-    
+
     const planRules = {
       planName: [
         { required: true, message: '请输入计划名称', trigger: 'blur' },
@@ -255,13 +258,13 @@ export default {
         { required: true, message: '请选择预期收获日期', trigger: 'change' }
       ]
     }
-    
+
     const pagination = reactive({
       currentPage: 1,
       pageSize: 10,
       total: 0
     })
-    
+
     // 获取种植计划列表
     const fetchPlanList = async () => {
       loading.value = true
@@ -353,7 +356,7 @@ export default {
         cropList.value = []
       }
     }
-    
+
     // 状态标签类型
     const getStatusTagType = (status) => {
       switch (status) {
@@ -364,7 +367,7 @@ export default {
         default: return 'info'
       }
     }
-    
+
     // 状态文本
     const getStatusText = (status) => {
       switch (status) {
@@ -375,7 +378,7 @@ export default {
         default: return status
       }
     }
-    
+
     // 添加种植计划
     const handleAddPlan = () => {
       dialogType.value = 'add'
@@ -393,7 +396,7 @@ export default {
       })
       dialogVisible.value = true
     }
-    
+
     // 编辑种植计划
     const handleEdit = (plan) => {
       dialogType.value = 'edit'
@@ -402,7 +405,12 @@ export default {
       })
       dialogVisible.value = true
     }
-    
+
+    // 查看种植计划详情
+    const handleViewDetail = (plan) => {
+      router.push(`/planting-plans/${plan.id}`)
+    }
+
     // 删除种植计划
     const handleDelete = (id) => {
       ElMessageBox.confirm('此操作将永久删除该种植计划, 是否继续?', '提示', {
@@ -420,7 +428,7 @@ export default {
         }
       })
     }
-    
+
     // 提交表单
     const submitForm = async () => {
       if (!planFormRef.value) return
@@ -470,7 +478,7 @@ export default {
         }
       })
     }
-    
+
     // 搜索处理
     const handleSearch = () => {
       pagination.currentPage = 1 // 搜索时重置到第一页
@@ -501,17 +509,17 @@ export default {
       pagination.currentPage = page
       fetchPlanList()
     }
-    
+
     const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加种植计划' : '编辑种植计划'
     })
-    
+
     onMounted(() => {
       fetchPlanList()
       fetchFarmlandList()
       fetchCropList()
     })
-    
+
     return {
       planList,
       farmlandList,
@@ -527,6 +535,7 @@ export default {
       getStatusText,
       handleAddPlan,
       handleEdit,
+      handleViewDetail,
       handleDelete,
       submitForm,
       handleSearch,

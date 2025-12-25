@@ -68,15 +68,15 @@
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="dashboard-card">
+        <el-card class="notification-card">
           <template #header>
             <span>近期提醒</span>
           </template>
-          <div class="notification-list">
-            <el-scrollbar max-height="350px">
-              <el-card 
-                v-for="item in recentNotifications" 
-                :key="item.id" 
+          <el-scrollbar height="280px">
+            <div class="notification-list">
+              <el-card
+                v-for="item in recentNotifications.slice(0, 4)"
+                :key="item.id"
                 class="notification-item"
                 shadow="never"
               >
@@ -85,15 +85,15 @@
                   <p class="notification-time">{{ item.time }}</p>
                 </div>
               </el-card>
-            </el-scrollbar>
-          </div>
+            </div>
+          </el-scrollbar>
         </el-card>
       </el-col>
     </el-row>
     
     <el-row :gutter="20" class="dashboard-row">
       <el-col :span="8">
-        <el-card class="dashboard-card">
+        <el-card class="chart-card">
           <template #header>
             <span>农田状态分布</span>
           </template>
@@ -101,7 +101,7 @@
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="dashboard-card">
+        <el-card class="chart-card">
           <template #header>
             <span>作物种类分布</span>
           </template>
@@ -109,7 +109,7 @@
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="dashboard-card">
+        <el-card class="chart-card">
           <template #header>
             <span>种植计划状态</span>
           </template>
@@ -445,16 +445,14 @@ export default {
 
 .dashboard-card {
   text-align: center;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .card-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 60px;
 }
 
 .card-icon {
@@ -468,10 +466,13 @@ export default {
   margin-right: 15px;
   color: white;
   font-size: 24px;
+  flex-shrink: 0;
 }
 
 .card-info {
   text-align: left;
+  flex: 1;
+  min-width: 0;
 }
 
 .card-number {
@@ -487,7 +488,21 @@ export default {
 }
 
 .dashboard-chart-card {
-  height: 460px;
+
+}
+
+.dashboard-chart-card .el-card__body {
+  padding: 16px !important;
+}
+
+/* 图表卡片样式 */
+.chart-card {
+  text-align: center;
+}
+
+/* 近期提醒卡片样式 */
+.notification-card {
+  height: 360px; /* 与图表卡片保持一致的高度 */
 }
 
 .notification-list {
@@ -506,6 +521,9 @@ export default {
 .notification-title {
   margin: 0;
   font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notification-time {

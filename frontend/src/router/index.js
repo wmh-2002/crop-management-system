@@ -8,6 +8,7 @@ import CropManagement from '@/views/crop/CropManagement.vue'
 import CropDetail from '@/views/crop/CropDetail.vue'
 import FarmlandManagement from '@/views/farmland/FarmlandManagement.vue'
 import PlantingPlan from '@/views/planting/PlantingPlan.vue'
+import PlantingPlanDetail from '@/views/planting/PlantingPlanDetail.vue'
 import GrowthMonitoring from '@/views/monitoring/GrowthMonitoring.vue'
 import Reports from '@/views/reports/Reports.vue'
 import Notifications from '@/views/notifications/Notifications.vue'
@@ -60,6 +61,12 @@ const routes = [
         path: 'planting-plans',
         name: 'PlantingPlan',
         component: PlantingPlan
+      },
+      {
+        path: 'planting-plans/:id',
+        name: 'PlantingPlanDetail',
+        component: PlantingPlanDetail,
+        props: true
       },
       {
         path: 'growth-monitoring',

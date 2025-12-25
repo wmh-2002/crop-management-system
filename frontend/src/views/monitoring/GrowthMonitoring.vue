@@ -11,15 +11,15 @@
               <el-icon><Plus /></el-icon>
               新增
             </el-button>
-            <el-input 
-              v-model="searchKeyword" 
-              placeholder="搜索记录" 
-              style="width: 200px; margin-left: 10px;" 
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索记录"
+              style="width: 200px; margin-left: 10px;"
               clearable
             />
-            <el-select 
-              v-model="statusFilter" 
-              placeholder="健康状态" 
+            <el-select
+              v-model="statusFilter"
+              placeholder="健康状态"
               style="margin-left: 10px; width: 120px;"
               clearable
             >
@@ -48,15 +48,15 @@
           </div>
         </div>
       </template>
-      
-      <el-table 
-        :data="monitoringList" 
-        style="width: 100%" 
+
+      <el-table
+        :data="monitoringList"
+        style="width: 100%"
         v-loading="loading"
         row-key="id"
       >
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="plan.planName" label="种植计划" width="150" />
+        <el-table-column prop="planId" label="种植计划" width="150" />
         <el-table-column prop="monitoringDate" label="监测日期" width="120" />
         <el-table-column prop="heightMeasurement" label="高度(cm)" width="100">
           <template #default="{ row }">
@@ -93,7 +93,7 @@
           </template>
         </el-table-column>
       </el-table>
-      
+
       <el-pagination
         class="pagination"
         @size-change="handleSizeChange"
@@ -105,26 +105,26 @@
         :total="pagination.total"
       />
     </el-card>
-    
+
     <!-- 生长监控编辑对话框 -->
-    <el-dialog 
-      v-model="dialogVisible" 
-      :title="dialogTitle" 
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogTitle"
       width="700px"
       :close-on-click-modal="false"
     >
-      <el-form 
-        :model="monitoringForm" 
-        :rules="monitoringRules" 
+      <el-form
+        :model="monitoringForm"
+        :rules="monitoringRules"
         ref="monitoringFormRef"
         label-width="120px"
       >
         <el-form-item label="种植计划" prop="planId">
           <el-select v-model="monitoringForm.planId" placeholder="请选择种植计划" style="width: 100%">
-            <el-option 
-              v-for="plan in planList" 
-              :key="plan.id" 
-              :label="plan.planName" 
+            <el-option
+              v-for="plan in planList"
+              :key="plan.id"
+              :label="plan.planName"
               :value="plan.id"
             />
           </el-select>
@@ -169,9 +169,9 @@
           <el-input v-model.number="monitoringForm.phLevel" type="number" placeholder="请输入pH值" step="0.01" />
         </el-form-item>
         <el-form-item label="备注" prop="notes">
-          <el-input 
-            v-model="monitoringForm.notes" 
-            type="textarea" 
+          <el-input
+            v-model="monitoringForm.notes"
+            type="textarea"
             :rows="3"
             placeholder="请输入备注信息"
           />
@@ -191,11 +191,11 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowRight, ArrowDown, Plus, Download } from '@element-plus/icons-vue'
-import { 
-  getGrowthMonitoringList, 
-  createGrowthMonitoring, 
-  updateGrowthMonitoring, 
-  deleteGrowthMonitoring 
+import {
+  getGrowthMonitoringList,
+  createGrowthMonitoring,
+  updateGrowthMonitoring,
+  deleteGrowthMonitoring
 } from '@/api/growthMonitoring'
 import { getPlantingPlanList } from '@/api/plantingPlan'
 
@@ -210,7 +210,7 @@ export default {
     const monitoringFormRef = ref(null)
     const searchKeyword = ref('')
     const statusFilter = ref('')
-    
+
     const monitoringForm = reactive({
       id: null,
       planId: null,
@@ -225,7 +225,7 @@ export default {
       phLevel: null,
       notes: ''
     })
-    
+
     const monitoringRules = {
       planId: [
         { required: true, message: '请选择种植计划', trigger: 'change' }
@@ -242,22 +242,41 @@ export default {
         { type: 'number', message: '土壤湿度必须为数字', trigger: 'blur' }
       ]
     }
-    
+
     const pagination = reactive({
       currentPage: 1,
       pageSize: 10,
       total: 0
     })
-    
+
     // 获取生长监控列表
     const fetchMonitoringList = async () => {
       loading.value = true
       try {
-        const response = await getGrowthMonitoringList({
-          page: pagination.currentPage,
+        const params = {
+          page: pagination.currentPage, // 后端通常使用0-based索引
           size: pagination.pageSize
-        })
-        monitoringList.value = response.data
+        }
+
+        // 添加筛选条件
+        if (searchKeyword.value) {
+          params.keyword = searchKeyword.value
+        }
+        if (statusFilter.value) {
+          params.healthStatus = statusFilter.value
+        }
+
+        const response = await getGrowthMonitoringList(params)
+        if (response.data && response.data.code === 200) {
+          const pageData = response.data.data
+          monitoringList.value = pageData.content || []
+          pagination.total = pageData.totalElements || 0
+          pagination.currentPage = pageData.page + 1 || 1 // 转换回1-based索引
+          pagination.pageSize = pageData.size || 10
+        } else {
+          monitoringList.value = []
+          pagination.total = 0
+        }
       } catch (error) {
         console.error('获取生长监控列表失败:', error)
         ElMessage.error('获取生长监控列表失败')
@@ -265,17 +284,25 @@ export default {
         loading.value = false
       }
     }
-    
+
     // 获取种植计划列表
     const fetchPlanList = async () => {
       try {
-        const response = await getPlantingPlanList()
-        planList.value = response.data
+        const response = await getPlantingPlanList({
+          page: 1,
+          size: 1000 // 获取所有种植计划
+        })
+        if (response.data && response.data.code === 200) {
+          planList.value = response.data.data.content || []
+        } else {
+          planList.value = []
+        }
       } catch (error) {
         console.error('获取种植计划列表失败:', error)
+        planList.value = []
       }
     }
-    
+
     // 状态标签类型
     const getStatusTagType = (status) => {
       switch (status) {
@@ -286,7 +313,7 @@ export default {
         default: return 'info'
       }
     }
-    
+
     // 状态文本
     const getStatusText = (status) => {
       switch (status) {
@@ -297,7 +324,7 @@ export default {
         default: return status
       }
     }
-    
+
     // 添加生长监控
     const handleAddMonitoring = () => {
       dialogType.value = 'add'
@@ -317,48 +344,69 @@ export default {
       })
       dialogVisible.value = true
     }
-    
+
     // 编辑生长监控
     const handleEdit = (monitoring) => {
       dialogType.value = 'edit'
-      Object.assign(monitoringForm, { 
-        ...monitoring,
-        planId: monitoring.plan.id
+      Object.assign(monitoringForm, {
+        id: monitoring.id,
+        planId: monitoring.planId,
+        monitoringDate: monitoring.monitoringDate,
+        heightMeasurement: monitoring.heightMeasurement,
+        widthMeasurement: monitoring.widthMeasurement,
+        healthStatus: monitoring.healthStatus,
+        soilMoisture: monitoring.soilMoisture,
+        temperature: monitoring.temperature,
+        humidity: monitoring.humidity,
+        lightIntensity: monitoring.lightIntensity,
+        phLevel: monitoring.phLevel,
+        notes: monitoring.notes
       })
       dialogVisible.value = true
     }
-    
+
     // 删除生长监控
-    const handleDelete = (id) => {
-      ElMessageBox.confirm('此操作将永久删除该生长监控记录, 是否继续?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(async () => {
-        try {
-          await deleteGrowthMonitoring(id)
-          ElMessage.success('删除成功')
-          fetchMonitoringList() // 重新获取列表
-        } catch (error) {
+    const handleDelete = async (id) => {
+      try {
+        await ElMessageBox.confirm('此操作将永久删除该生长监控记录, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+
+        await deleteGrowthMonitoring(id)
+        ElMessage.success('删除成功')
+        fetchMonitoringList() // 重新获取列表
+      } catch (error) {
+        if (error !== 'cancel') {
           console.error('删除失败:', error)
           ElMessage.error('删除失败: ' + (error.message || '网络错误'))
         }
-      })
+      }
     }
-    
+
     // 提交表单
     const submitForm = async () => {
       if (!monitoringFormRef.value) return
-      
+
       await monitoringFormRef.value.validate(async (valid) => {
         if (valid) {
           try {
             // 创建或更新数据对象
             const formData = {
-              ...monitoringForm,
-              plan: { id: monitoringForm.planId }
+              planId: monitoringForm.planId,
+              monitoringDate: monitoringForm.monitoringDate,
+              heightMeasurement: monitoringForm.heightMeasurement,
+              widthMeasurement: monitoringForm.widthMeasurement,
+              healthStatus: monitoringForm.healthStatus,
+              soilMoisture: monitoringForm.soilMoisture,
+              temperature: monitoringForm.temperature,
+              humidity: monitoringForm.humidity,
+              lightIntensity: monitoringForm.lightIntensity,
+              phLevel: monitoringForm.phLevel,
+              notes: monitoringForm.notes
             }
-            
+
             if (dialogType.value === 'add') {
               await createGrowthMonitoring(formData)
               ElMessage.success('生长监控记录添加成功')
@@ -375,27 +423,41 @@ export default {
         }
       })
     }
-    
+
+    // 搜索功能
+    const handleSearch = () => {
+      pagination.currentPage = 1
+      fetchMonitoringList()
+    }
+
+    // 重置筛选
+    const resetFilters = () => {
+      searchKeyword.value = ''
+      statusFilter.value = ''
+      pagination.currentPage = 1
+      fetchMonitoringList()
+    }
+
     // 分页处理
     const handleSizeChange = (size) => {
       pagination.pageSize = size
       fetchMonitoringList()
     }
-    
+
     const handleCurrentChange = (page) => {
       pagination.currentPage = page
       fetchMonitoringList()
     }
-    
+
     const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加生长监控' : '编辑生长监控'
     })
-    
+
     onMounted(() => {
       fetchMonitoringList()
       fetchPlanList()
     })
-    
+
     return {
       monitoringList,
       planList,
@@ -414,6 +476,8 @@ export default {
       submitForm,
       handleSizeChange,
       handleCurrentChange,
+      handleSearch,
+      resetFilters,
       dialogTitle,
       searchKeyword,
       statusFilter,
