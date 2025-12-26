@@ -1,9 +1,19 @@
-// 全局SCSS变量
-$primary-color: #409eff;
-$success-color: #67c23a;
-$warning-color: #e6a23c;
-$danger-color: #f56c6c;
-$info-color: #909399;
+// 全局SCSS变量 - 农业管理系统主题
+$primary-color: #16a34a;        // 深绿色 - 农业主色调
+$primary-light: #22c55e;        // 明亮绿色
+$primary-dark: #15803d;         // 深绿色
+$success-color: #4ade80;        // 成功色 - 鲜绿色
+$warning-color: #f59e0b;        // 警告色 - 金黄色
+$danger-color: #ef4444;         // 危险色 - 红色
+$info-color: #6b7280;           // 信息色 - 灰色
 
 $font-size-base: 14px;
-$border-radius-base: 4px;
+$border-radius-base: 8px;       // 更大的圆角，更现代化
+
+// 农业主题扩展颜色
+$agriculture-green: #16a34a;    // 农业主题绿
+$forest-green: #15803d;         // 森林绿
+$lime-green: #84cc16;           // 鲜艳绿
+$earth-brown: #92400e;          // 泥土色
+$sky-blue: #0ea5e9;             // 天蓝色
+$wheat-gold: #eab308;           // 小麦金
