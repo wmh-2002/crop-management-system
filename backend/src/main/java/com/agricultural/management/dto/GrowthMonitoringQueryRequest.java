@@ -31,6 +31,7 @@ public class GrowthMonitoringQueryRequest {
     private BigDecimal maxSoilMoisture;
     private BigDecimal minPhLevel;
     private BigDecimal maxPhLevel;
+    private String keyword;
 
     // Getters and Setters
     public Integer getPage() {
@@ -183,5 +184,13 @@ public class GrowthMonitoringQueryRequest {
 
     public void setMaxPhLevel(BigDecimal maxPhLevel) {
         this.maxPhLevel = maxPhLevel;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
     }
 }

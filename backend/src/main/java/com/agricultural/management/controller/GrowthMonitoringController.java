@@ -47,7 +47,8 @@ public class GrowthMonitoringController {
             @RequestParam(required = false) BigDecimal minSoilMoisture,
             @RequestParam(required = false) BigDecimal maxSoilMoisture,
             @RequestParam(required = false) BigDecimal minPhLevel,
-            @RequestParam(required = false) BigDecimal maxPhLevel) {
+            @RequestParam(required = false) BigDecimal maxPhLevel,
+            @RequestParam(required = false) String keyword) {
 
         try {
             GrowthMonitoringQueryRequest request = new GrowthMonitoringQueryRequest();
@@ -67,6 +68,7 @@ public class GrowthMonitoringController {
             request.setMaxSoilMoisture(maxSoilMoisture);
             request.setMinPhLevel(minPhLevel);
             request.setMaxPhLevel(maxPhLevel);
+            request.setKeyword(keyword);
 
             // 转换健康状态字符串为枚举
             if (healthStatus != null && !healthStatus.trim().isEmpty()) {
@@ -342,6 +344,23 @@ public class GrowthMonitoringController {
             e.printStackTrace();
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.<List<GrowthMonitoringResponse>>error("查询失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 采集生长监测数据 - 为所有种植计划生成当日的监测记录
+     */
+    @PostMapping("/collect")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('FARMER') or hasRole('STAFF')")
+    public ResponseEntity<ApiResponse<String>> collectGrowthMonitoringData() {
+        try {
+            int collectedCount = growthMonitoringService.collectGrowthMonitoringData();
+            return ResponseEntity.ok(ApiResponse.success("成功采集了 " + collectedCount + " 条生长监测数据"));
+        } catch (Exception e) {
+            System.err.println("Error in collectGrowthMonitoringData: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.<String>error("采集生长监测数据失败: " + e.getMessage()));
         }
     }
 }

@@ -16,6 +16,7 @@ public class CropResponse {
     private Long id;
     private String name;
     private String variety;
+    private String cropCategory;
     private String plantingSeason;
     private Integer growthPeriod;
     private BigDecimal expectedYield;

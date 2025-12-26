@@ -3,6 +3,7 @@ package com.agricultural.management.repository;
 import com.agricultural.management.entity.PlantingPlan;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -30,4 +31,7 @@ public interface PlantingPlanRepository extends JpaRepository<PlantingPlan, Long
 
     boolean existsByFarmlandIdAndCropIdAndPlannedStartDateLessThanEqualAndPlannedEndDateGreaterThanEqual(
         Long farmlandId, Long cropId, LocalDate endDate, LocalDate startDate);
+
+    @Query("SELECT p.status, COUNT(p) FROM PlantingPlan p GROUP BY p.status")
+    List<Object[]> countByStatus();
 }

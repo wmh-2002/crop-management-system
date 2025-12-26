@@ -17,6 +17,8 @@ public class CropUpdateRequest {
 
     private String variety;
 
+    private String cropCategory;
+
     private String plantingSeason;
 
     @Min(value = 1, message = "生长期必须大于0天")

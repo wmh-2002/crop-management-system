@@ -12,6 +12,7 @@ public class CropQueryRequest {
     private Integer size = 10;
     private String name;
     private String variety;
+    private String cropCategory;
     private String plantingSeason;
     private Integer minGrowthPeriod;
     private Integer maxGrowthPeriod;

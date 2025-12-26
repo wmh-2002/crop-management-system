@@ -34,4 +34,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByTypeAndStatus(Notification.NotificationType type, Notification.NotificationStatus status);
 
     List<Notification> findByPriorityAndStatus(Notification.NotificationPriority priority, Notification.NotificationStatus status);
+
+    List<Notification> findByScheduledTimeBetweenOrderByScheduledTimeDesc(LocalDateTime startTime, LocalDateTime endTime);
 }

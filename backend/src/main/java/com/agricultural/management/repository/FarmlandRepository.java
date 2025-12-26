@@ -3,6 +3,7 @@ package com.agricultural.management.repository;
 import com.agricultural.management.entity.Farmland;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,4 +18,7 @@ public interface FarmlandRepository extends JpaRepository<Farmland, Long>, JpaSp
     boolean existsByNameAndCreatedBy(String name, Long createdBy);
 
     boolean existsByNameAndCreatedByAndIdNot(String name, Long createdBy, Long id);
+
+    @Query("SELECT f.status, COUNT(f) FROM Farmland f GROUP BY f.status")
+    List<Object[]> countByStatus();
 }

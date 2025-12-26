@@ -82,7 +82,17 @@
               >
                 <div class="notification-content">
                   <p class="notification-title">{{ item.title }}</p>
-                  <p class="notification-time">{{ item.time }}</p>
+                  <p class="notification-time">{{ formatNotificationTime(item.scheduledTime) }}</p>
+                </div>
+              </el-card>
+              <el-card
+                v-if="recentNotifications.length === 0"
+                class="notification-item"
+                shadow="never"
+              >
+                <div class="notification-content">
+                  <p class="notification-title">暂无近期提醒</p>
+                  <p class="notification-time"></p>
                 </div>
               </el-card>
             </div>
@@ -121,17 +131,17 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
-import { 
-  User, 
-  SuitcaseLine, 
-  Location, 
+import { ref, onMounted, nextTick } from 'vue'
+import {
+  User,
+  SuitcaseLine,
+  Location,
   TrendCharts,
   Monitor,
-  Document,
-  ArrowRight
+  Document
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import { getDashboardStatistics } from '@/api/dashboard'
 
 export default {
   name: 'Dashboard',
@@ -141,8 +151,7 @@ export default {
     Location,
     TrendCharts,
     Monitor,
-    Document,
-    ArrowRight
+    Document
   },
   setup() {
     const notifications = ref([
@@ -159,43 +168,100 @@ export default {
     const recentNotifications = ref([])
     
     onMounted(() => {
-      // 获取统计数据
+      // 获取统计数据（包含图表初始化）
       fetchDashboardData()
-      
-      // 初始化图表
-      initProductionChart()
-      initFarmlandStatusChart()
-      initCropTypeChart()
-      initPlanStatusChart()
     })
     
-    const fetchDashboardData = () => {
-      // 使用mock数据获取统计信息
-      userCount.value = 128
-      cropCount.value = 45
-      farmlandCount.value = 24
-      planCount.value = 89
-      recentNotifications.value = [
-        { id: 1, title: '番茄需要浇水', time: '今天 10:30' },
-        { id: 2, title: '施肥计划到期', time: '今天 14:00' },
-        { id: 3, title: '病虫害检查提醒', time: '明天 09:00' },
-        { id: 4, title: '小麦收获期', time: '后天 08:00' }
-      ]
+    const fetchDashboardData = async () => {
+      try {
+        console.log('开始获取仪表板数据...')
+        const response = await getDashboardStatistics()
+        console.log('仪表板响应:', response)
+
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const data = response.data.data
+
+          // 设置基础统计数据
+          userCount.value = data.userCount || 0
+          cropCount.value = data.cropCount || 0
+          farmlandCount.value = data.farmlandCount || 0
+          planCount.value = data.planCount || 0
+
+          // 设置近期提醒
+          recentNotifications.value = data.recentNotifications || []
+
+          // 等待DOM更新后再初始化图表
+          await nextTick()
+          initProductionChart(data.productionTrendData)
+          initFarmlandStatusChart(data.farmlandStatusData)
+          initCropTypeChart(data.cropCategoryData)
+          initPlanStatusChart(data.planStatusData)
+
+          console.log('成功获取仪表板数据')
+        } else {
+          console.log('仪表板响应格式不正确:', response.data)
+          // 设置默认数据
+          setDefaultData()
+        }
+      } catch (error) {
+        console.error('获取仪表板数据失败:', error)
+        ElMessage.error('获取仪表板数据失败')
+        // 设置默认数据
+        setDefaultData()
+      }
+    }
+
+    // 设置默认数据（用于API调用失败时）
+    const setDefaultData = async () => {
+      userCount.value = 0
+      cropCount.value = 0
+      farmlandCount.value = 0
+      planCount.value = 0
+      recentNotifications.value = []
+
+      // 等待DOM更新后再初始化图表
+      await nextTick()
+      initProductionChart(null)
+      initFarmlandStatusChart(null)
+      initCropTypeChart(null)
+      initPlanStatusChart(null)
+    }
+
+    // 格式化提醒时间
+    const formatNotificationTime = (scheduledTime) => {
+      if (!scheduledTime) return ''
+      const date = new Date(scheduledTime)
+      const now = new Date()
+      const diff = date - now
+
+      // 计算天数差
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+
+      if (days === 0) {
+        return `今天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+      } else if (days === 1) {
+        return `明天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+      } else if (days === 2) {
+        return `后天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+      } else if (days > 0 && days < 7) {
+        return `${days}天后 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+      } else {
+        return date.toLocaleDateString('zh-CN') + ` ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+      }
     }
     
-    const initProductionChart = () => {
+    const initProductionChart = (productionData) => {
       const chartDom = document.getElementById('production-chart')
       if (chartDom) {
         const myChart = echarts.init(chartDom)
-        const option = {
+
+        let option = {
           title: {
             text: '作物产量趋势'
           },
           tooltip: {
             trigger: 'axis'
-          },
-          legend: {
-            data: ['小麦', '玉米', '水稻', '番茄']
           },
           grid: {
             left: '3%',
@@ -216,7 +282,25 @@ export default {
           yAxis: {
             type: 'value'
           },
-          series: [
+          series: []
+        }
+
+        if (productionData && productionData.months && productionData.crops) {
+          option.xAxis.data = productionData.months
+          option.legend = {
+            data: productionData.crops.map(crop => crop.name)
+          }
+          option.series = productionData.crops.map(crop => ({
+            name: crop.name,
+            type: 'line',
+            data: crop.data
+          }))
+        } else {
+          // 默认数据
+          option.legend = {
+            data: ['小麦', '玉米', '水稻', '番茄']
+          }
+          option.series = [
             {
               name: '小麦',
               type: 'line',
@@ -239,8 +323,9 @@ export default {
             }
           ]
         }
+
         myChart.setOption(option)
-        
+
         // 监听窗口大小变化
         window.addEventListener('resize', () => {
           myChart.resize()
@@ -248,7 +333,7 @@ export default {
       }
     }
     
-    const initFarmlandStatusChart = () => {
+    const initFarmlandStatusChart = (farmlandData) => {
       const chartDom = document.getElementById('farmland-status-chart')
       if (chartDom) {
         const myChart = echarts.init(chartDom)
@@ -285,7 +370,7 @@ export default {
               labelLine: {
                 show: true
               },
-              data: [
+              data: farmlandData || [
                 { value: 15, name: '可用' },
                 { value: 6, name: '已种植' },
                 { value: 3, name: '维护中' }
@@ -294,7 +379,7 @@ export default {
           ]
         }
         myChart.setOption(option)
-        
+
         // 监听窗口大小变化
         window.addEventListener('resize', () => {
           myChart.resize()
@@ -302,7 +387,7 @@ export default {
       }
     }
     
-    const initCropTypeChart = () => {
+    const initCropTypeChart = (cropData) => {
       const chartDom = document.getElementById('crop-type-chart')
       if (chartDom) {
         const myChart = echarts.init(chartDom)
@@ -339,7 +424,7 @@ export default {
               labelLine: {
                 show: true
               },
-              data: [
+              data: cropData || [
                 { value: 15, name: '蔬菜类' },
                 { value: 12, name: '粮食作物' },
                 { value: 10, name: '经济作物' },
@@ -349,7 +434,7 @@ export default {
           ]
         }
         myChart.setOption(option)
-        
+
         // 监听窗口大小变化
         window.addEventListener('resize', () => {
           myChart.resize()
@@ -357,7 +442,7 @@ export default {
       }
     }
     
-    const initPlanStatusChart = () => {
+    const initPlanStatusChart = (planData) => {
       const chartDom = document.getElementById('plan-status-chart')
       if (chartDom) {
         const myChart = echarts.init(chartDom)
@@ -394,7 +479,7 @@ export default {
               labelLine: {
                 show: true
               },
-              data: [
+              data: planData || [
                 { value: 35, name: '计划中' },
                 { value: 28, name: '进行中' },
                 { value: 18, name: '已完成' },
@@ -404,7 +489,7 @@ export default {
           ]
         }
         myChart.setOption(option)
-        
+
         // 监听窗口大小变化
         window.addEventListener('resize', () => {
           myChart.resize()

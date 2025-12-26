@@ -11,6 +11,9 @@ import PlantingPlan from '@/views/planting/PlantingPlan.vue'
 import PlantingPlanDetail from '@/views/planting/PlantingPlanDetail.vue'
 import GrowthMonitoring from '@/views/monitoring/GrowthMonitoring.vue'
 import Reports from '@/views/reports/Reports.vue'
+import CropGrowthAnalysis from '@/views/reports/CropGrowthAnalysis.vue'
+import FieldUtilizationAnalysis from '@/views/reports/FieldUtilizationAnalysis.vue'
+import ComprehensiveStatistics from '@/views/reports/ComprehensiveStatistics.vue'
 import Notifications from '@/views/notifications/Notifications.vue'
 
 const routes = [
@@ -75,8 +78,28 @@ const routes = [
       },
       {
         path: 'reports',
-        name: 'Reports',
-        component: Reports
+        component: Reports,
+        children: [
+          {
+            path: '',
+            redirect: '/reports/crop-growth'
+          },
+          {
+            path: 'crop-growth',
+            name: 'CropGrowthAnalysis',
+            component: CropGrowthAnalysis
+          },
+          {
+            path: 'field-utilization',
+            name: 'FieldUtilizationAnalysis',
+            component: FieldUtilizationAnalysis
+          },
+          {
+            path: 'comprehensive',
+            name: 'ComprehensiveStatistics',
+            component: ComprehensiveStatistics
+          }
+        ]
       },
       {
         path: 'notifications',

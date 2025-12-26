@@ -9,7 +9,11 @@
           <div class="card-header-left">
             <el-button type="primary" @click="handleAddMonitoring">
               <el-icon><Plus /></el-icon>
-              新增
+              手动录入
+            </el-button>
+            <el-button type="success" @click="handleCollectData">
+              <el-icon><Download /></el-icon>
+              采集数据
             </el-button>
             <el-input
               v-model="searchKeyword"
@@ -195,7 +199,8 @@ import {
   getGrowthMonitoringList,
   createGrowthMonitoring,
   updateGrowthMonitoring,
-  deleteGrowthMonitoring
+  deleteGrowthMonitoring,
+  collectAllGrowthMonitoringData
 } from '@/api/growthMonitoring'
 import { getPlantingPlanList } from '@/api/plantingPlan'
 
@@ -258,7 +263,7 @@ export default {
           size: pagination.pageSize
         }
 
-        // 添加筛选条件
+        // 添加筛选条件 - 使用正确的参数名
         if (searchKeyword.value) {
           params.keyword = searchKeyword.value
         }
@@ -385,6 +390,34 @@ export default {
       }
     }
 
+    // 采集生长监测数据
+    const handleCollectData = async () => {
+      try {
+        await ElMessageBox.confirm(
+          '此操作将为所有种植计划自动生成当日的生长监测数据，是否继续?',
+          '采集确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        const response = await collectAllGrowthMonitoringData()
+        if (response.data && response.data.code === 200) {
+          ElMessage.success(response.data.data || '采集完成')
+          fetchMonitoringList() // 重新获取列表
+        } else {
+          ElMessage.error('采集失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('采集失败:', error)
+          ElMessage.error('采集失败: ' + (error.message || '网络错误'))
+        }
+      }
+    }
+
     // 提交表单
     const submitForm = async () => {
       if (!monitoringFormRef.value) return
@@ -471,6 +504,7 @@ export default {
       getStatusTagType,
       getStatusText,
       handleAddMonitoring,
+      handleCollectData,
       handleEdit,
       handleDelete,
       submitForm,

@@ -45,6 +45,15 @@ public class CropService {
                     "%" + request.getVariety().trim() + "%"));
             }
 
+            if (request.getCropCategory() != null && !request.getCropCategory().trim().isEmpty()) {
+                try {
+                    Crop.CropCategory category = Crop.CropCategory.valueOf(request.getCropCategory().toUpperCase());
+                    predicates.add(criteriaBuilder.equal(root.get("cropCategory"), category));
+                } catch (IllegalArgumentException e) {
+                    // 忽略无效的类别值
+                }
+            }
+
             if (request.getPlantingSeason() != null && !request.getPlantingSeason().trim().isEmpty()) {
                 predicates.add(criteriaBuilder.equal(root.get("plantingSeason"), request.getPlantingSeason()));
             }
@@ -103,6 +112,15 @@ public class CropService {
         Crop crop = new Crop();
         crop.setName(request.getName());
         crop.setVariety(request.getVariety());
+        if (request.getCropCategory() != null && !request.getCropCategory().trim().isEmpty()) {
+            try {
+                crop.setCropCategory(Crop.CropCategory.valueOf(request.getCropCategory().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                crop.setCropCategory(Crop.CropCategory.OTHER);
+            }
+        } else {
+            crop.setCropCategory(Crop.CropCategory.OTHER);
+        }
         crop.setPlantingSeason(request.getPlantingSeason());
         crop.setGrowthPeriod(request.getGrowthPeriod());
         crop.setExpectedYield(request.getExpectedYield());
@@ -139,6 +157,13 @@ public class CropService {
         }
         if (request.getVariety() != null) {
             crop.setVariety(request.getVariety());
+        }
+        if (request.getCropCategory() != null && !request.getCropCategory().trim().isEmpty()) {
+            try {
+                crop.setCropCategory(Crop.CropCategory.valueOf(request.getCropCategory().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                crop.setCropCategory(Crop.CropCategory.OTHER);
+            }
         }
         if (request.getPlantingSeason() != null) {
             crop.setPlantingSeason(request.getPlantingSeason());
@@ -212,19 +237,20 @@ public class CropService {
     }
 
     private CropResponse convertToCropResponse(Crop crop) {
-        return new CropResponse(
-            crop.getId(),
-            crop.getName(),
-            crop.getVariety(),
-            crop.getPlantingSeason(),
-            crop.getGrowthPeriod(),
-            crop.getExpectedYield(),
-            crop.getWaterNeeds(),
-            crop.getFertilizerNeeds(),
-            crop.getDiseaseInfo(),
-            crop.getDescription(),
-            crop.getCreatedAt(),
-            crop.getUpdatedAt()
-        );
+        return CropResponse.builder()
+            .id(crop.getId())
+            .name(crop.getName())
+            .variety(crop.getVariety())
+            .cropCategory(crop.getCropCategory() != null ? crop.getCropCategory().name() : null)
+            .plantingSeason(crop.getPlantingSeason())
+            .growthPeriod(crop.getGrowthPeriod())
+            .expectedYield(crop.getExpectedYield())
+            .waterNeeds(crop.getWaterNeeds())
+            .fertilizerNeeds(crop.getFertilizerNeeds())
+            .diseaseInfo(crop.getDiseaseInfo())
+            .description(crop.getDescription())
+            .createdAt(crop.getCreatedAt())
+            .updatedAt(crop.getUpdatedAt())
+            .build();
     }
 }

@@ -24,6 +24,11 @@
               <el-descriptions-item label="作物品种">
                 {{ crop.variety || '暂无' }}
               </el-descriptions-item>
+              <el-descriptions-item label="作物类别">
+                <el-tag :type="getCategoryTagType(crop.cropCategory)">
+                  {{ getCategoryDisplayName(crop.cropCategory) }}
+                </el-tag>
+              </el-descriptions-item>
               <el-descriptions-item label="种植季节">
                 {{ crop.plantingSeason || '暂无' }}
               </el-descriptions-item>
@@ -154,6 +159,28 @@ export default {
       })
     }
 
+    // 获取作物类别的显示名称
+    const getCategoryDisplayName = (category) => {
+      const categoryMap = {
+        'VEGETABLES': '蔬菜类',
+        'GRAINS': '粮食类',
+        'ECONOMIC_CROPS': '经济作物',
+        'OTHER': '其它'
+      }
+      return categoryMap[category] || '其它'
+    }
+
+    // 获取作物类别的标签类型
+    const getCategoryTagType = (category) => {
+      const typeMap = {
+        'VEGETABLES': 'success',
+        'GRAINS': 'primary',
+        'ECONOMIC_CROPS': 'warning',
+        'OTHER': 'info'
+      }
+      return typeMap[category] || 'info'
+    }
+
     // 返回列表
     const goBack = () => {
       router.push('/crops')
@@ -192,7 +219,9 @@ export default {
       formatDate,
       goBack,
       handleEdit,
-      handleDelete
+      handleDelete,
+      getCategoryDisplayName,
+      getCategoryTagType
     }
   }
 }

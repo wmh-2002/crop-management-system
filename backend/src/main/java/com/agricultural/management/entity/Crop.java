@@ -21,6 +21,10 @@ public class Crop {
     @Column(length = 100)
     private String variety;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "crop_category", nullable = false)
+    private CropCategory cropCategory = CropCategory.OTHER;
+
     @Column(name = "planting_season", length = 50)
     private String plantingSeason;
 
@@ -53,12 +57,13 @@ public class Crop {
     public Crop() {
     }
 
-    public Crop(Long id, String name, String variety, String plantingSeason, Integer growthPeriod,
+    public Crop(Long id, String name, String variety, CropCategory cropCategory, String plantingSeason, Integer growthPeriod,
                BigDecimal expectedYield, String waterNeeds, String fertilizerNeeds,
                String diseaseInfo, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.variety = variety;
+        this.cropCategory = cropCategory != null ? cropCategory : CropCategory.OTHER;
         this.plantingSeason = plantingSeason;
         this.growthPeriod = growthPeriod;
         this.expectedYield = expectedYield;
@@ -93,6 +98,14 @@ public class Crop {
 
     public void setVariety(String variety) {
         this.variety = variety;
+    }
+
+    public CropCategory getCropCategory() {
+        return cropCategory;
+    }
+
+    public void setCropCategory(CropCategory cropCategory) {
+        this.cropCategory = cropCategory != null ? cropCategory : CropCategory.OTHER;
     }
 
     public String getPlantingSeason() {
@@ -167,10 +180,18 @@ public class Crop {
         this.updatedAt = updatedAt;
     }
 
+    public enum CropCategory {
+        VEGETABLES,      // 蔬菜类
+        GRAINS,          // 粮食类
+        ECONOMIC_CROPS,  // 经济作物
+        OTHER            // 其它
+    }
+
     public static class Builder {
         private Long id;
         private String name;
         private String variety;
+        private CropCategory cropCategory = CropCategory.OTHER;
         private String plantingSeason;
         private Integer growthPeriod;
         private BigDecimal expectedYield;
@@ -193,6 +214,11 @@ public class Crop {
 
         public Builder variety(String variety) {
             this.variety = variety;
+            return this;
+        }
+
+        public Builder cropCategory(CropCategory cropCategory) {
+            this.cropCategory = cropCategory;
             return this;
         }
 
@@ -242,7 +268,7 @@ public class Crop {
         }
 
         public Crop build() {
-            return new Crop(id, name, variety, plantingSeason, growthPeriod, expectedYield,
+            return new Crop(id, name, variety, cropCategory, plantingSeason, growthPeriod, expectedYield,
                           waterNeeds, fertilizerNeeds, diseaseInfo, description, createdAt, updatedAt);
         }
     }

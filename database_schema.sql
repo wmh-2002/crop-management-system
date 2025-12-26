@@ -32,6 +32,7 @@ CREATE TABLE crops (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL COMMENT '作物名称',
     variety VARCHAR(100) COMMENT '作物品种',
+    crop_category ENUM('VEGETABLES', 'GRAINS', 'ECONOMIC_CROPS', 'OTHER') DEFAULT 'OTHER' COMMENT '作物类别：VEGETABLES-蔬菜类，GRAINS-粮食类，ECONOMIC_CROPS-经济作物，OTHER-其它',
     planting_season VARCHAR(50) COMMENT '种植季节',
     growth_period INT COMMENT '生长期（天）',
     expected_yield DECIMAL(10,2) COMMENT '预期产量',

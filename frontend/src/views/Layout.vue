@@ -191,6 +191,15 @@ export default {
         case '/reports':
           breadcrumbTitle.value = '数据分析'
           break
+        case '/reports/crop-growth':
+          breadcrumbTitle.value = '作物生长分析'
+          break
+        case '/reports/field-utilization':
+          breadcrumbTitle.value = '农田利用率分析'
+          break
+        case '/reports/comprehensive':
+          breadcrumbTitle.value = '综合统计'
+          break
         case '/notifications':
           breadcrumbTitle.value = '通知与提醒'
           break

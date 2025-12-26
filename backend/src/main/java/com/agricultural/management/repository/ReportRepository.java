@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -26,4 +27,6 @@ public interface ReportRepository extends JpaRepository<Report, Long>, JpaSpecif
     List<Report> findByReportTypeOrderByCreatedAtDesc(Report.ReportType reportType);
 
     List<Report> findByGeneratedByOrderByCreatedAtDesc(Long generatedBy);
+
+    List<Report> findByCreatedAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime);
 }

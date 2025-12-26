@@ -127,3 +127,10 @@ export function collectGrowthMonitoring(planId) {
     method: 'post'
   })
 }
+
+export function collectAllGrowthMonitoringData() {
+  return request({
+    url: '/growth-monitoring/collect',
+    method: 'post'
+  })
+}

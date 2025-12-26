@@ -19,6 +19,18 @@
               @keyup.enter="handleSearch"
             />
             <el-select
+              v-model="categoryFilter"
+              placeholder="类别筛选"
+              style="margin-left: 10px; width: 120px;"
+              clearable
+              @change="handleFilter"
+            >
+              <el-option label="蔬菜类" value="VEGETABLES" />
+              <el-option label="粮食类" value="GRAINS" />
+              <el-option label="经济作物" value="ECONOMIC_CROPS" />
+              <el-option label="其它" value="OTHER" />
+            </el-select>
+            <el-select
               v-model="seasonFilter"
               placeholder="季节筛选"
               style="margin-left: 10px; width: 120px;"
@@ -65,6 +77,13 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="作物名称" width="150" />
         <el-table-column prop="variety" label="品种" width="120" />
+        <el-table-column prop="cropCategory" label="作物类别" width="120">
+          <template #default="{ row }">
+            <el-tag :type="getCategoryTagType(row.cropCategory)">
+              {{ getCategoryDisplayName(row.cropCategory) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="plantingSeason" label="种植季节" width="120" />
         <el-table-column prop="growthPeriod" label="生长期(天)" width="120">
           <template #default="{ row }">
@@ -116,6 +135,14 @@
         </el-form-item>
         <el-form-item label="作物品种">
           <el-input v-model="cropForm.variety" placeholder="请输入作物品种（可选）" />
+        </el-form-item>
+        <el-form-item label="作物类别" prop="cropCategory">
+          <el-select v-model="cropForm.cropCategory" placeholder="请选择作物类别" style="width: 100%">
+            <el-option label="蔬菜类" value="VEGETABLES" />
+            <el-option label="粮食类" value="GRAINS" />
+            <el-option label="经济作物" value="ECONOMIC_CROPS" />
+            <el-option label="其它" value="OTHER" />
+          </el-select>
         </el-form-item>
         <el-form-item label="种植季节">
           <el-input v-model="cropForm.plantingSeason" placeholder="请输入种植季节（可选）" />
@@ -176,12 +203,14 @@ export default {
     const dialogType = ref('add') // 'add' 或 'edit'
     const cropFormRef = ref(null)
     const searchKeyword = ref('')
+    const categoryFilter = ref('')
     const seasonFilter = ref('')
     
     const cropForm = reactive({
       id: null,
       name: '',
       variety: '',
+      cropCategory: 'OTHER',
       plantingSeason: '',
       growthPeriod: null,
       expectedYield: null,
@@ -227,6 +256,10 @@ export default {
           params.name = searchKeyword.value.trim()
         }
 
+        if (categoryFilter.value) {
+          params.cropCategory = categoryFilter.value
+        }
+
         if (seasonFilter.value) {
           params.plantingSeason = seasonFilter.value
         }
@@ -270,6 +303,7 @@ export default {
         id: null,
         name: '',
         variety: '',
+        cropCategory: 'OTHER',
         plantingSeason: '',
         growthPeriod: null,
         expectedYield: null,
@@ -318,6 +352,7 @@ export default {
               const createData = {
                 name: cropForm.name,
                 variety: cropForm.variety || undefined,
+                cropCategory: cropForm.cropCategory || 'OTHER',
                 plantingSeason: cropForm.plantingSeason || undefined,
                 growthPeriod: cropForm.growthPeriod,
                 expectedYield: cropForm.expectedYield,
@@ -334,6 +369,7 @@ export default {
               const updateData = {}
               if (cropForm.name) updateData.name = cropForm.name
               if (cropForm.variety !== undefined) updateData.variety = cropForm.variety || null
+              if (cropForm.cropCategory !== undefined) updateData.cropCategory = cropForm.cropCategory || 'OTHER'
               if (cropForm.plantingSeason !== undefined) updateData.plantingSeason = cropForm.plantingSeason || null
               if (cropForm.growthPeriod) updateData.growthPeriod = cropForm.growthPeriod
               if (cropForm.expectedYield) updateData.expectedYield = cropForm.expectedYield
@@ -372,6 +408,7 @@ export default {
     // 重置筛选
     const handleReset = () => {
       searchKeyword.value = ''
+      categoryFilter.value = ''
       seasonFilter.value = ''
       pagination.currentPage = 1
       fetchCropList()
@@ -391,6 +428,28 @@ export default {
     const dialogTitle = computed(() => {
       return dialogType.value === 'add' ? '添加作物' : '编辑作物'
     })
+
+    // 获取作物类别的显示名称
+    const getCategoryDisplayName = (category) => {
+      const categoryMap = {
+        'VEGETABLES': '蔬菜类',
+        'GRAINS': '粮食类',
+        'ECONOMIC_CROPS': '经济作物',
+        'OTHER': '其它'
+      }
+      return categoryMap[category] || '其它'
+    }
+
+    // 获取作物类别的标签类型
+    const getCategoryTagType = (category) => {
+      const typeMap = {
+        'VEGETABLES': 'success',
+        'GRAINS': 'primary',
+        'ECONOMIC_CROPS': 'warning',
+        'OTHER': 'info'
+      }
+      return typeMap[category] || 'info'
+    }
     
     onMounted(() => {
       fetchCropList()
@@ -417,7 +476,10 @@ export default {
       handleCurrentChange,
       dialogTitle,
       searchKeyword,
+      categoryFilter,
       seasonFilter,
+      getCategoryDisplayName,
+      getCategoryTagType,
       ArrowRight,
       ArrowDown,
       Plus,
